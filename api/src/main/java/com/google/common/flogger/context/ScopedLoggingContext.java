@@ -96,15 +96,16 @@ public abstract class ScopedLoggingContext {
      * the type already exists in the list, the original (potentially {@code null}) list reference
      * is returned.
      */
-    @NullableDecl public static ScopeList addScope(
-        @NullableDecl ScopeList list, @NullableDecl ScopeType type) {
+    @NullableDecl
+    public static ScopeList addScope(@NullableDecl ScopeList list, @NullableDecl ScopeType type) {
       return (type != null && lookup(list, type) == null)
           ? new ScopeList(type, type.newScope(), list)
           : list;
     }
 
     /** Finds a scope instance for the given type in a possibly null scope list. */
-    @NullableDecl public static LoggingScope lookup(@NullableDecl ScopeList list, ScopeType type) {
+    @NullableDecl
+    public static LoggingScope lookup(@NullableDecl ScopeList list, ScopeType type) {
       while (list != null) {
         if (type.equals(list.key)) {
           return list.scope;
@@ -136,6 +137,7 @@ public abstract class ScopedLoggingContext {
     private Tags tags = null;
     private ContextMetadata.Builder metadata = null;
     private LogLevelMap logLevelMap = null;
+    private boolean hasLogLevelMap = false;
 
     protected Builder() {}
 
@@ -153,10 +155,13 @@ public abstract class ScopedLoggingContext {
 
     /**
      * Adds a single metadata key/value pair to the context. This method can be called multiple
-     * times on a builder.
+     * times on a builder. Calling with a null value does not add metadata.
      */
     @CanIgnoreReturnValue
-    public final <T> Builder withMetadata(MetadataKey<T> key, T value) {
+    public final <T> Builder withMetadata(MetadataKey<T> key, @NullableDecl T value) {
+      if (value == null) {
+        return this;
+      }
       if (metadata == null) {
         metadata = ContextMetadata.builder();
       }
@@ -166,12 +171,12 @@ public abstract class ScopedLoggingContext {
 
     /**
      * Sets the log level map to be used with the context being built. This method can be called at
-     * most once per builder.
+     * most once per builder. Calling with a null value does not set a log level map.
      */
     @CanIgnoreReturnValue
-    public final Builder withLogLevelMap(LogLevelMap logLevelMap) {
-      checkState(this.logLevelMap == null, "log level map already set");
-      checkNotNull(logLevelMap, "log level map");
+    public final Builder withLogLevelMap(@NullableDecl LogLevelMap logLevelMap) {
+      checkState(!hasLogLevelMap, "log level map already set");
+      hasLogLevelMap = true;
       this.logLevelMap = logLevelMap;
       return this;
     }

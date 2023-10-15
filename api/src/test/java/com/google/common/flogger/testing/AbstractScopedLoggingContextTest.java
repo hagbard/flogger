@@ -20,6 +20,7 @@ import static com.google.common.flogger.LogContext.Key.TAGS;
 import static com.google.common.flogger.testing.MetadataSubject.assertThat;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.flogger.LoggingScope;
@@ -129,6 +130,32 @@ public abstract class AbstractScopedLoggingContextTest {
   }
 
   @Test
+  public void testNewContext_withNoOpTags_ignored() {
+    assertThat(getTagMap()).isEmpty();
+    context
+        .newContext()
+        .withTags(Tags.empty())
+        .run(
+            () -> {
+              assertThat(getTagMap()).isEmpty();
+              markTestAsDone();
+            });
+    assertThat(getTagMap()).isEmpty();
+    checkDone();
+  }
+
+  @Test
+  public void testNewContext_withTagsTwice_rejected() {
+    try {
+      context.newContext().withTags(Tags.empty()).withTags(Tags.of("foo", "bar")).run(() -> {});
+      fail("Expected IllegalStateException");
+    } catch (IllegalStateException e) {
+      markTestAsDone();
+    }
+    checkDone();
+  }
+
+  @Test
   public void testNewContext_withMetadata() {
     assertThat(getMetadata()).hasSize(0);
     context
@@ -138,6 +165,21 @@ public abstract class AbstractScopedLoggingContextTest {
             () -> {
               assertThat(getMetadata()).containsEntries(FOO_KEY, "foo");
               assertThat(getMetadata().findValue(FOO_KEY)).isEqualTo("foo");
+              markTestAsDone();
+            });
+    assertThat(getMetadata()).hasSize(0);
+    checkDone();
+  }
+
+  @Test
+  public void testNewContext_withNullMetadata_ignored() {
+    assertThat(getMetadata()).hasSize(0);
+    context
+        .newContext()
+        .withMetadata(FOO_KEY, null)
+        .run(
+            () -> {
+              assertThat(getMetadata()).hasSize(0);
               markTestAsDone();
             });
     assertThat(getMetadata()).hasSize(0);
@@ -157,6 +199,32 @@ public abstract class AbstractScopedLoggingContextTest {
               markTestAsDone();
             });
     assertLogging("foo.bar.Bar", Level.FINE).isFalse();
+    checkDone();
+  }
+
+  @Test
+  public void testNewContext_withNullLogLevelMap_ignored() {
+    assertLogging("foo.bar.Bar", Level.FINE).isFalse();
+    context
+        .newContext()
+        .withLogLevelMap(null)
+        .run(
+            () -> {
+              assertLogging("foo.bar.Bar", Level.FINE).isFalse();
+              markTestAsDone();
+            });
+    assertLogging("foo.bar.Bar", Level.FINE).isFalse();
+    checkDone();
+  }
+
+  @Test
+  public void testNewContext_withLogLevelMapTwice_rejected() {
+    try {
+      context.newContext().withLogLevelMap(null).withLogLevelMap(null).run(() -> {});
+      fail("Expected IllegalStateException");
+    } catch (IllegalStateException e) {
+      markTestAsDone();
+    }
     checkDone();
   }
 
